@@ -1,68 +1,49 @@
-const CACHE_NAME="cache-v1"
-const CACHEDINAMIC_NAME="dinamic-v1"  
-const CACHE_INMUTABLE_NAME="INMUTABLENAME-v1"        
-self.addEventListener('install',event=>{
- const instalandocache = caches.open(CACHE_NAME).then
- (cache=>{
-   //cache.addAll([ "/","index.html","css/style.css","img/favico.ico","js/app.js","img/avs/blackbull.jpg","img/avs/cat.png","img/avs/kangoroo.png"])
-   cache.addAll([ "./","index.html","css/style.css","img/favico.ico","js/app.js","img/avs/blackbull.jpg","img/avs/cat.png","img/avs/kangoroo.png","pages/offline.html"])
-
- });
 
 
- event.waitUntil(promise.all({instalandocache,instalandoInmutable}));
+importScripts('js/sw-acces.js');
+
+const STATIC_CACHE = 'static-v1';
+const DYNAMIC_CACHE = 'dynamic-v1';
+const INMUTABLE_CACHE = 'inmutable-v1';
+const APP_SHELL = [
+  "./","index.html","css/style.css","img/favico.ico","js/app.js","img/avs/blackbull.jpg","img/avs/cat.png","img/avs/kangoroo.png","pages/offline.html"
+];
+const APP_SHELL_INMUTABLE = [
+  "pages/offline.html","https://fonts.googleapis.com/css?family=Lato:400,300","https://fonts.googleapis.com/css?family=Quicksand:300,400","https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css","js/libs/jquery.js"
+];
 
 
+self.addEventListener('install', event => {
+    const cacheStatic = caches.open(STATIC_CACHE).then(cache => {
+        cache.addAll(APP_SHELL);
+    });
+    const cacheInmutable = caches.open(INMUTABLE_CACHE).then(cache => {
+        cache.addAll(APP_SHELL_INMUTABLE);
+    });
+    event.waitUntil(Promise.all([cacheStatic, cacheInmutable]));
+});
 
-  });
-/*
-  self.addEventListener("fetch",evento=>{
-  //Estrategia cache only 
 
-  evento.respondWith(caches.match(evento.request))
-  })*/
-//cache con network fallback
-function limpiaCache(cacheName, itemsNumber){
-caches.open(cacheName)
-.then(cache => {
-    //obtrer loe elementos
-    return cache.keys()
-        .then(keys => {
-            console.log(keys);
-            if(keys.length > itemsNumber){
-                cache.delete(keys[0])
-                    .then(limpiaCache(cacheName,itemsNumber));
+self.addEventListener('activate', event => {
+    const respuesta = caches.keys().then(keys => {
+        keys.forEach(key => {
+            if (key !== STATIC_CACHE && key.includes('static')) {
+                return caches.delete(key);
             }
         });
-});
-}
-
-self.addEventListener("fetch",evento=>{
-
-//Estrategia cache only 
-const respuestaFallback = caches.match(evento.request).then
-(res=>{
-if(res) return res;
-console.log("este elemento no existe",evento.request.url)
-return fetch(evento.request).then(newrespond=>{
-caches.open(CACHEDINAMIC_NAME).then(cache=>{
-
-cache.put(evento.request,newrespond);
-limpiaCache(CACHEDINAMIC_NAME, 100)
+    });
+    event.waitUntil(respuesta);
 });
 
-const instalandoInmutable = caches.open(CACHE_INMUTABLE_NAME).then
-(cache=>{
-cache.add(["pages/offline.html","https://fonts.googleapis.com/css?family=Lato:400,300","https://fonts.googleapis.com/css?family=Quicksand:300,400","https://netdna.bootstrapcdn.com/font-awesome/3.1.1/css/font-awesome.css","js/libs/jquery.js"])
 
-});
+self.addEventListener('fetch', event => {
+    const respuesta = caches.match(event.request).then(res => {
+        if (res) { return res; } else {
+            return fetch(event.request).then(newRes => {
+                return actualizaCacheDinamico(DYNAMIC_CACHE, event.request, newRes);
+            });
+        }
+    });
 
-}).catch(error=>{
-if (evento.request.headers.get('accept').includes('text/html')) {
-return caches.match('pages/offline.html');
-};
-})
-//return newrespond.clone();
-});
-evento.respondWith(respuestaFallback)
+    event.respondWith(respuesta);
 });
