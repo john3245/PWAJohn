@@ -5,7 +5,7 @@ self.addEventListener('install',event=>{
  const instalandocache = caches.open(CACHE_NAME).then
  (cache=>{
    //cache.addAll([ "/","index.html","css/style.css","img/favico.ico","js/app.js","img/avs/blackbull.jpg","img/avs/cat.png","img/avs/kangoroo.png"])
-   cache.addAll([ "index.html","css/style.css","img/favico.ico","js/app.js","img/avs/blackbull.jpg","img/avs/cat.png","img/avs/kangoroo.png","pages/offline.html"])
+   cache.addAll([ "./","index.html","css/style.css","img/favico.ico","js/app.js","img/avs/blackbull.jpg","img/avs/cat.png","img/avs/kangoroo.png","pages/offline.html"])
 
  });
 
